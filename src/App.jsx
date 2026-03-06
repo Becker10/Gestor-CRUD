@@ -1,36 +1,27 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 
 function App() {
   // use a relative path so the Vite proxy or production server handles it
   const API_URL = '/api/products'
 
-  const categorias = [
-    'Mouses',
-    'Laptops',
-    'MacBooks',
-    'Routers',
-    'Teclados',
-    'Monitores',
-    'Auriculares',
-    'Impresoras',
-    'Otros'
-  ]
-
   // Estados para cada sección
+  const [categoriasExistentes, setCategoriasExistentes] = useState([])
   const [listarMsg, setListarMsg] = useState('')
   const [idBuscar, setIdBuscar] = useState('')
   const [obtenerMsg, setObtenerMsg] = useState('')
   const [crearNombre, setCrearNombre] = useState('')
   const [crearDescripcion, setCrearDescripcion] = useState('')
   const [crearPrecio, setCrearPrecio] = useState('')
-  const [crearCategoria, setCrearCategoria] = useState('')
+  const [crearCategoriaExistente, setCrearCategoriaExistente] = useState('')
+  const [crearCategoriaNueva, setCrearCategoriaNueva] = useState('')
   const [crearMsg, setCrearMsg] = useState('')
   const [actualizarId, setActualizarId] = useState('')
   const [actualizarNombre, setActualizarNombre] = useState('')
   const [actualizarDescripcion, setActualizarDescripcion] = useState('')
   const [actualizarPrecio, setActualizarPrecio] = useState('')
-  const [actualizarCategoria, setActualizarCategoria] = useState('')
+  const [actualizarCategoriaExistente, setActualizarCategoriaExistente] = useState('')
+  const [actualizarCategoriaNueva, setActualizarCategoriaNueva] = useState('')
   const [actualizarMsg, setActualizarMsg] = useState('')
   const [eliminarId, setEliminarId] = useState('')
   const [eliminarMsg, setEliminarMsg] = useState('')
@@ -52,6 +43,23 @@ function App() {
     setActualizarMsg('')
     setEliminarMsg('')
   }
+
+  // Cargar categorías desde el backend
+  const cargarCategorias = async () => {
+    try {
+      const response = await fetch(API_URL.replace('/products', '') + '/categories')
+      if (!response.ok) throw new Error('Error')
+      const categorias = await response.json()
+      setCategoriasExistentes(categorias)
+    } catch (error) {
+      console.error('Error loading categories:', error)
+    }
+  }
+
+  // useEffect para cargar categorías al montar el componente
+  useEffect(() => {
+    cargarCategorias()
+  }, [])
 
   // 1. LISTAR
   const listarProductos = async () => {
@@ -95,6 +103,7 @@ function App() {
       mostrarMensaje(setCrearMsg, 'Nombre y precio son requeridos', 'error')
       return
     }
+    const categoria = crearCategoriaNueva.trim() || crearCategoriaExistente
     try {
       mostrarMensaje(setCrearMsg, 'Creando...', 'info')
       const response = await fetch(API_URL, {
@@ -104,7 +113,7 @@ function App() {
           name: crearNombre,
           description: crearDescripcion || null,
           price: parseFloat(crearPrecio),
-          category: crearCategoria || null
+          category: categoria || null
         })
       })
       if (!response.ok) throw new Error('Error al crear')
@@ -114,7 +123,9 @@ function App() {
       setCrearNombre('')
       setCrearDescripcion('')
       setCrearPrecio('')
-      setCrearCategoria('')
+      setCrearCategoriaExistente('')
+      setCrearCategoriaNueva('')
+      cargarCategorias()
     } catch (error) {
       mostrarMensaje(setCrearMsg, `✗ Error: ${error.message}`, 'error')
     }
@@ -126,7 +137,7 @@ function App() {
       mostrarMensaje(setActualizarMsg, 'ID es requerido', 'error')
       return
     }
-    if (!actualizarNombre && !actualizarDescripcion && !actualizarPrecio) {
+    if (!actualizarNombre && !actualizarDescripcion && !actualizarPrecio && !actualizarCategoriaExistente && !actualizarCategoriaNueva) {
       mostrarMensaje(setActualizarMsg, 'Ingresa al menos un campo para actualizar', 'error')
       return
     }
@@ -134,7 +145,8 @@ function App() {
     if (actualizarNombre) datos.name = actualizarNombre
     if (actualizarDescripcion) datos.description = actualizarDescripcion
     if (actualizarPrecio) datos.price = parseFloat(actualizarPrecio)
-    if (actualizarCategoria) datos.category = actualizarCategoria
+    const categoria = actualizarCategoriaNueva.trim() || actualizarCategoriaExistente
+    if (categoria) datos.category = categoria
 
     try {
       mostrarMensaje(setActualizarMsg, 'Actualizando...', 'info')
@@ -155,7 +167,9 @@ function App() {
       setActualizarNombre('')
       setActualizarDescripcion('')
       setActualizarPrecio('')
-      setActualizarCategoria('')
+      setActualizarCategoriaExistente('')
+      setActualizarCategoriaNueva('')
+      cargarCategorias()
     } catch (error) {
       mostrarMensaje(setActualizarMsg, `✗ Error: ${error.message}`, 'error')
     }
@@ -193,6 +207,25 @@ function App() {
     if (!mensaje) return null
     const [tipo, texto] = mensaje.split(':')
     return <div className={`message ${tipo}`}>{texto}</div>
+  }
+
+  // Filtrar por categoría
+  const filtrarPorCategoria = async (categoria) => {
+    try {
+      mostrarMensaje(setListarMsg, `⏳ Cargando ${categoria}...`, 'info')
+      const response = await fetch(`${API_URL}?category=${encodeURIComponent(categoria)}`)
+      if (!response.ok) throw new Error('Error')
+      const datos = await response.json()
+      if (datos.length === 0) {
+        mostrarMensaje(setListarMsg, `✓ 0 productos en ${categoria}`, 'info')
+        mostrarResultados(null)
+        return
+      }
+      mostrarMensaje(setListarMsg, `✓ ${datos.length} en ${categoria}`, 'success')
+      mostrarResultados(datos)
+    } catch (error) {
+      mostrarMensaje(setListarMsg, `✗ Error: ${error.message}`, 'error')
+    }
   }
 
   // Componente de Resultados
@@ -255,6 +288,23 @@ function App() {
           <Mensaje mensaje={obtenerMsg} />
         </div>
 
+        {/* CATEGORÍAS */}
+        <div className="section">
+          <h2>🏷️ Por Categoría</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            {categoriasExistentes.map(cat => (
+              <button 
+                key={cat}
+                className="btn-primary" 
+                style={{ padding: '8px 4px', fontSize: '0.8em' }}
+                onClick={() => filtrarPorCategoria(cat)}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* CREAR */}
         <div className="section">
           <h2>➕ Crear Producto</h2>
@@ -290,17 +340,27 @@ function App() {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="crearCategoria">Categoría:</label>
+            <label htmlFor="crearCategoriaExistente">Categoría Existente:</label>
             <select
-              id="crearCategoria"
-              value={crearCategoria}
-              onChange={(e) => setCrearCategoria(e.target.value)}
+              id="crearCategoriaExistente"
+              value={crearCategoriaExistente}
+              onChange={(e) => setCrearCategoriaExistente(e.target.value)}
             >
-              <option value="">Seleccionar categoría</option>
-              {categorias.map(cat => (
+              <option value="">--- Seleccionar ---</option>
+              {categoriasExistentes.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>
+          </div>
+          <div className="form-group">
+            <label htmlFor="crearCategoriaNueva">O Nueva Categoría:</label>
+            <input
+              type="text"
+              id="crearCategoriaNueva"
+              placeholder="Crear una nueva..."
+              value={crearCategoriaNueva}
+              onChange={(e) => setCrearCategoriaNueva(e.target.value)}
+            />
           </div>
           <div className="button-group">
             <button className="btn-success" onClick={crearProducto}>Crear</button>
@@ -354,17 +414,27 @@ function App() {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="actualizarCategoria">Categoría (opcional):</label>
+            <label htmlFor="actualizarCategoriaExistente">Categoría Existente (opcional):</label>
             <select
-              id="actualizarCategoria"
-              value={actualizarCategoria}
-              onChange={(e) => setActualizarCategoria(e.target.value)}
+              id="actualizarCategoriaExistente"
+              value={actualizarCategoriaExistente}
+              onChange={(e) => setActualizarCategoriaExistente(e.target.value)}
             >
-              <option value="">Seleccionar categoría</option>
-              {categorias.map(cat => (
+              <option value="">--- Seleccionar ---</option>
+              {categoriasExistentes.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>
+          </div>
+          <div className="form-group">
+            <label htmlFor="actualizarCategoriaNueva">O Nueva Categoría (opcional):</label>
+            <input
+              type="text"
+              id="actualizarCategoriaNueva"
+              placeholder="Crear una nueva..."
+              value={actualizarCategoriaNueva}
+              onChange={(e) => setActualizarCategoriaNueva(e.target.value)}
+            />
           </div>
           <div className="button-group">
             <button className="btn-warning" onClick={actualizarProducto}>Actualizar</button>

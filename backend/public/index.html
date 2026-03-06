@@ -384,6 +384,13 @@
                 </div>
                 <div id="sidebarMsg"></div>
             </div>
+
+            <div class="sidebar-section" style="margin-top: 16px;">
+                <div class="sidebar-section-title">Categorías</div>
+                <div id="categoriasBotonesContainer" style="display: grid; gap: 6px;">
+                    <!-- Se cargarán dinámicamente -->
+                </div>
+            </div>
         </div>
 
         <div class="main">
@@ -404,19 +411,14 @@
                         <input type="number" id="crearPrecio" placeholder="0.00" step="0.01" min="0">
                     </div>
                     <div class="form-group">
-                        <label>Categoría</label>
-                        <select id="crearCategoria">
-                            <option value="">Seleccionar</option>
-                            <option value="Mouses">Mouses</option>
-                            <option value="Laptops">Laptops</option>
-                            <option value="MacBooks">MacBooks</option>
-                            <option value="Routers">Routers</option>
-                            <option value="Teclados">Teclados</option>
-                            <option value="Monitores">Monitores</option>
-                            <option value="Auriculares">Auriculares</option>
-                            <option value="Impresoras">Impresoras</option>
-                            <option value="Otros">Otros</option>
+                        <label>Categoría Existente</label>
+                        <select id="crearCategoriaExistente">
+                            <option value="">--- Seleccionar ---</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label>O Nueva Categoría</label>
+                        <input type="text" id="crearCategoriaNueva" placeholder="Crear una nueva...">
                     </div>
                     <button class="btn btn-success" style="margin-top: 8px;" onclick="crearProducto()">Crear</button>
                     <div id="crearMessage"></div>
@@ -444,19 +446,14 @@
                         <input type="number" id="actualizarPrecio" placeholder="0.00" step="0.01" min="0">
                     </div>
                     <div class="form-group">
-                        <label>Categoría (opt.)</label>
-                        <select id="actualizarCategoria">
-                            <option value="">Seleccionar</option>
-                            <option value="Mouses">Mouses</option>
-                            <option value="Laptops">Laptops</option>
-                            <option value="MacBooks">MacBooks</option>
-                            <option value="Routers">Routers</option>
-                            <option value="Teclados">Teclados</option>
-                            <option value="Monitores">Monitores</option>
-                            <option value="Auriculares">Auriculares</option>
-                            <option value="Impresoras">Impresoras</option>
-                            <option value="Otros">Otros</option>
+                        <label>Categoría Existente (opt.)</label>
+                        <select id="actualizarCategoriaExistente">
+                            <option value="">--- Seleccionar ---</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label>O Nueva Categoría (opt.)</label>
+                        <input type="text" id="actualizarCategoriaNueva" placeholder="Crear una nueva...">
                     </div>
                     <div class="btn-group" style="margin-top: 8px;">
                         <button class="btn btn-warning" onclick="actualizarProducto()">Actualizar</button>
@@ -547,7 +544,9 @@
             const nombre = document.getElementById('crearNombre').value;
             const descripcion = document.getElementById('crearDescripcion').value;
             const precio = document.getElementById('crearPrecio').value;
-            const categoria = document.getElementById('crearCategoria').value;
+            const categoriaExistente = document.getElementById('crearCategoriaExistente').value;
+            const categoriaNueva = document.getElementById('crearCategoriaNueva').value.trim();
+            const categoria = categoriaNueva || categoriaExistente;
 
             if (!nombre || !precio) {
                 mostrarMensaje('crearMessage', 'Nombre y precio requeridos', 'error');
@@ -573,7 +572,9 @@
                 document.getElementById('crearNombre').value = '';
                 document.getElementById('crearDescripcion').value = '';
                 document.getElementById('crearPrecio').value = '';
-                document.getElementById('crearCategoria').value = '';
+                document.getElementById('crearCategoriaExistente').value = '';
+                document.getElementById('crearCategoriaNueva').value = '';
+                cargarCategorias();
             } catch (e) {
                 mostrarMensaje('crearMessage', `✗ ${e.message}`, 'error');
             }
@@ -590,7 +591,9 @@
             if (document.getElementById('actualizarNombre').value) datos.name = document.getElementById('actualizarNombre').value;
             if (document.getElementById('actualizarDescripcion').value) datos.description = document.getElementById('actualizarDescripcion').value;
             if (document.getElementById('actualizarPrecio').value) datos.price = parseFloat(document.getElementById('actualizarPrecio').value);
-            if (document.getElementById('actualizarCategoria').value) datos.category = document.getElementById('actualizarCategoria').value;
+            const actualizarCategoriaExistente = document.getElementById('actualizarCategoriaExistente').value;
+            const actualizarCategoriaNueva = document.getElementById('actualizarCategoriaNueva').value.trim();
+            if (actualizarCategoriaNueva || actualizarCategoriaExistente) datos.category = actualizarCategoriaNueva || actualizarCategoriaExistente;
 
             if (Object.keys(datos).length === 0) {
                 mostrarMensaje('actualizarMessage', 'Ingresa al menos un campo', 'error');
@@ -616,7 +619,9 @@
                 document.getElementById('actualizarNombre').value = '';
                 document.getElementById('actualizarDescripcion').value = '';
                 document.getElementById('actualizarPrecio').value = '';
-                document.getElementById('actualizarCategoria').value = '';
+                document.getElementById('actualizarCategoriaExistente').value = '';
+                document.getElementById('actualizarCategoriaNueva').value = '';
+                cargarCategorias();
             } catch (e) {
                 mostrarMensaje('actualizarMessage', `✗ ${e.message}`, 'error');
             }
@@ -646,7 +651,68 @@
             }
         }
 
+        async function filtrarPorCategoria(categoria) {
+            try {
+                mostrarMensaje('sidebarMsg', `⏳ Cargando ${categoria}...`, 'info');
+                const res = await fetch(`${API_URL}?category=${encodeURIComponent(categoria)}`);
+                if (!res.ok) throw new Error('Error');
+                const datos = await res.json();
+                if (datos.length === 0) {
+                    mostrarMensaje('sidebarMsg', `✓ 0 productos en ${categoria}`, 'info');
+                    document.getElementById('resultados').innerHTML = '<div class="empty">No hay productos en esta categoría</div>';
+                    return;
+                }
+                mostrarMensaje('sidebarMsg', `✓ ${datos.length} en ${categoria}`, 'success');
+                mostrarResultados(datos);
+            } catch (e) {
+                mostrarMensaje('sidebarMsg', `✗ ${e.message}`, 'error');
+            }
+        }
+
+        async function cargarCategorias() {
+            try {
+                const res = await fetch(`${API_URL.replace('/products', '')}/categories`);
+                if (!res.ok) throw new Error('Error');
+                const categorias = await res.json();
+                
+                // Actualizar botones en sidebar
+                const container = document.getElementById('categoriasBotonesContainer');
+                container.innerHTML = '';
+                categorias.forEach(cat => {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn btn-primary sidebar-btn';
+                    btn.textContent = cat;
+                    btn.onclick = () => filtrarPorCategoria(cat);
+                    container.appendChild(btn);
+                });
+                
+                // Actualizar select de crear
+                const selectCrear = document.getElementById('crearCategoriaExistente');
+                const valorAnterior = selectCrear.value;
+                selectCrear.innerHTML = '<option value="">--- Seleccionar ---</option>';
+                categorias.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = cat;
+                    selectCrear.appendChild(option);
+                });
+                
+                // Actualizar select de actualizar
+                const selectActualizar = document.getElementById('actualizarCategoriaExistente');
+                selectActualizar.innerHTML = '<option value="">--- Seleccionar ---</option>';
+                categorias.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = cat;
+                    selectActualizar.appendChild(option);
+                });
+            } catch (e) {
+                console.error('Error loading categories:', e);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
+            cargarCategorias();
             mostrarResultados(null);
         });
     </script>

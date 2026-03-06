@@ -13,8 +13,21 @@ app.use(express.static(path.join(__dirname, 'public')));
 //Listar 
 
 app.get('/api/products', async (req, res) => {
-    const items = await prisma.product.findMany({ orderBy: { id: "desc" } });
-    res.json(items);
+    const { category } = req.query;
+    try {
+        let items;
+        if (category) {
+            items = await prisma.product.findMany({ 
+                where: { category: category },
+                orderBy: { id: "desc" } 
+            });
+        } else {
+            items = await prisma.product.findMany({ orderBy: { id: "desc" } });
+        }
+        res.json(items);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching products" });
+    }
 });
 
 //Get one 
@@ -74,6 +87,24 @@ app.delete("/api/products/:id", async (req, res) => {
         res.status(204).send();
     } catch (error) {
         res.status(404).json({ message: "Product not found" });
+    }
+});
+
+//Get all unique categories
+app.get("/api/categories", async (req, res) => {
+    try {
+        const products = await prisma.product.findMany({
+            select: { category: true },
+            distinct: ['category'],
+            orderBy: { category: 'asc' }
+        });
+        const categories = products
+            .map(p => p.category)
+            .filter(cat => cat !== null && cat.trim() !== '')
+            .sort();
+        res.json(categories);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching categories" });
     }
 });
 
