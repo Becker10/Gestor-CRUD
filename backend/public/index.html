@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD Productos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: #1a1a1a;
+            border-bottom: 1px solid #2a2a2a;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header h1 {
+            font-size: 1.4em;
+            font-weight: 700;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: calc(100vh - 60px);
+        }
+
+        .sidebar {
+            background: #1a1a1a;
+            border-right: 1px solid #2a2a2a;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .main {
+            background: #0a0a0a;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .panel {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            padding: 12px;
+            border-bottom: 1px solid #2a2a2a;
+            font-weight: 600;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #b0b0b0;
+        }
+
+        .panel-content {
+            padding: 12px;
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        label {
+            font-size: 0.75em;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        input, textarea, select {
+            background: #0a0a0a;
+            border: 1px solid #2a2a2a;
+            border-radius: 4px;
+            padding: 6px 8px;
+            color: #e0e0e0;
+            font-size: 0.85em;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        input::placeholder, textarea::placeholder {
+            color: #555;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #3a5a7a;
+            box-shadow: 0 0 0 2px rgba(58, 90, 122, 0.2);
+        }
+
+        textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            background: #1a5f7a;
+            color: white;
+            border: 1px solid #2a8fa8;
+        }
+
+        .btn-primary:hover {
+            background: #216b8a;
+            box-shadow: 0 2px 8px rgba(26, 95, 122, 0.3);
+        }
+
+        .btn-success {
+            background: #2d5a3d;
+            color: #5fd97f;
+            border: 1px solid #4a8a58;
+            flex: 1;
+        }
+
+        .btn-success:hover {
+            background: #386a49;
+        }
+
+        .btn-warning {
+            background: #6b4a1f;
+            color: #ffa500;
+            border: 1px solid #8a6a3f;
+            flex: 1;
+        }
+
+        .btn-warning:hover {
+            background: #7a5a2f;
+        }
+
+        .btn-danger {
+            background: #5a2a2a;
+            color: #ff6b6b;
+            border: 1px solid #7a4a4a;
+            flex: 1;
+        }
+
+        .btn-danger:hover {
+            background: #6a3a3a;
+        }
+
+        .btn-info {
+            background: #2a4a6a;
+            color: #6ba3ff;
+            border: 1px solid #3a6a9a;
+            flex: 1;
+        }
+
+        .btn-info:hover {
+            background: #3a5a7a;
+        }
+
+        .message {
+            padding: 8px 10px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            border: 1px solid;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.info {
+            background: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        .message.success {
+            background: rgba(74, 222, 128, 0.1);
+            color: #86efac;
+            border-color: rgba(74, 222, 128, 0.3);
+        }
+
+        .message.error {
+            background: rgba(248, 113, 113, 0.1);
+            color: #fca5a5;
+            border-color: rgba(248, 113, 113, 0.3);
+        }
+
+        .results-container {
+            background: #0a0a0a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            grid-column: 1 / -1;
+        }
+
+        .results-header {
+            padding: 12px;
+            border-bottom: 1px solid #2a2a2a;
+            font-weight: 600;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #b0b0b0;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 12px;
+            padding: 12px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .product-card {
+            background: linear-gradient(135deg, #1a1a1a 0%, #151515 100%);
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            padding: 12px;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .product-card:hover {
+            border-color: #3a3a3a;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .product-card .id {
+            font-size: 0.7em;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .product-card h3 {
+            font-size: 0.95em;
+            color: #fff;
+            margin: 0;
+        }
+
+        .product-card p {
+            font-size: 0.8em;
+            color: #999;
+            margin: 0;
+            line-height: 1.3;
+        }
+
+        .product-card .price {
+            font-size: 1.1em;
+            color: #5fd97f;
+            font-weight: 700;
+        }
+
+        .product-card .category {
+            font-size: 0.75em;
+            color: #6ba3ff;
+            background: rgba(107, 163, 255, 0.1);
+            padding: 3px 6px;
+            border-radius: 3px;
+            width: fit-content;
+            border: 1px solid rgba(107, 163, 255, 0.2);
+        }
+
+        .product-card small {
+            font-size: 0.7em;
+            color: #555;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 30px 12px;
+            color: #555;
+            font-size: 0.85em;
+        }
+
+        .sidebar-section {
+            margin-bottom: 16px;
+        }
+
+        .sidebar-section-title {
+            font-size: 0.75em;
+            font-weight: 700;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .sidebar-btn {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 6px;
+        }
+
+        @media (max-width: 1200px) {
+            .main {
+                grid-template-columns: 1fr;
+            }
+
+            .results-container {
+                grid-column: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid #2a2a2a;
+                padding: 8px;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+
+            .main {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📦 CRUD Productos</h1>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Acciones</div>
+                <button class="btn btn-primary sidebar-btn" onclick="listarProductos()">Listar Todos</button>
+                <div class="form-group" style="margin-top: 8px;">
+                    <label>Buscar por ID</label>
+                    <input type="number" id="idBuscar" placeholder="ID" min="1">
+                    <button class="btn btn-info sidebar-btn" style="margin-top: 4px;" onclick="obtenerProducto()">Buscar</button>
+                </div>
+                <div id="sidebarMsg"></div>
+            </div>
+        </div>
+
+        <div class="main">
+            <!-- Panel Crear -->
+            <div class="panel">
+                <div class="panel-header">➕ Crear Producto</div>
+                <div class="panel-content">
+                    <div class="form-group">
+                        <label>Nombre</label>
+                        <input type="text" id="crearNombre" placeholder="Ej: Laptop">
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <textarea id="crearDescripcion" placeholder="Detalles..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Precio ($)</label>
+                        <input type="number" id="crearPrecio" placeholder="0.00" step="0.01" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Categoría</label>
+                        <select id="crearCategoria">
+                            <option value="">Seleccionar</option>
+                            <option value="Mouses">Mouses</option>
+                            <option value="Laptops">Laptops</option>
+                            <option value="MacBooks">MacBooks</option>
+                            <option value="Routers">Routers</option>
+                            <option value="Teclados">Teclados</option>
+                            <option value="Monitores">Monitores</option>
+                            <option value="Auriculares">Auriculares</option>
+                            <option value="Impresoras">Impresoras</option>
+                            <option value="Otros">Otros</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-success" style="margin-top: 8px;" onclick="crearProducto()">Crear</button>
+                    <div id="crearMessage"></div>
+                </div>
+            </div>
+
+            <!-- Panel Actualizar/Eliminar -->
+            <div class="panel">
+                <div class="panel-header">✏️ Actualizar / 🗑️ Eliminar</div>
+                <div class="panel-content">
+                    <div class="form-group">
+                        <label>ID del Producto</label>
+                        <input type="number" id="actualizarId" placeholder="ID" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre (opt.)</label>
+                        <input type="text" id="actualizarNombre" placeholder="Nuevo nombre">
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción (opt.)</label>
+                        <textarea id="actualizarDescripcion" placeholder="Nueva descripción..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Precio (opt.)</label>
+                        <input type="number" id="actualizarPrecio" placeholder="0.00" step="0.01" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Categoría (opt.)</label>
+                        <select id="actualizarCategoria">
+                            <option value="">Seleccionar</option>
+                            <option value="Mouses">Mouses</option>
+                            <option value="Laptops">Laptops</option>
+                            <option value="MacBooks">MacBooks</option>
+                            <option value="Routers">Routers</option>
+                            <option value="Teclados">Teclados</option>
+                            <option value="Monitores">Monitores</option>
+                            <option value="Auriculares">Auriculares</option>
+                            <option value="Impresoras">Impresoras</option>
+                            <option value="Otros">Otros</option>
+                        </select>
+                    </div>
+                    <div class="btn-group" style="margin-top: 8px;">
+                        <button class="btn btn-warning" onclick="actualizarProducto()">Actualizar</button>
+                        <button class="btn btn-danger" onclick="eliminarProducto()">Eliminar</button>
+                    </div>
+                    <div id="actualizarMessage"></div>
+                </div>
+            </div>
+
+            <!-- Resultados -->
+            <div class="results-container">
+                <div class="results-header">📊 Resultados</div>
+                <div class="results-grid" id="resultados"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api/products';
+
+        function mostrarMensaje(elementId, mensaje, tipo = 'info') {
+            const el = document.getElementById(elementId);
+            el.innerHTML = `<div class="message ${tipo}">${mensaje}</div>`;
+            setTimeout(() => { el.innerHTML = ''; }, 4000);
+        }
+
+        function mostrarResultados(datos) {
+            const container = document.getElementById('resultados');
+            if (!datos) {
+                container.innerHTML = '<div class="empty">Sin datos</div>';
+                return;
+            }
+
+            const items = Array.isArray(datos) ? datos : [datos];
+            if (items.length === 0) {
+                container.innerHTML = '<div class="empty">No hay productos</div>';
+                return;
+            }
+
+            container.innerHTML = items.map(p => `
+                <div class="product-card">
+                    <div class="id">ID: ${p.id}</div>
+                    <h3>${p.name}</h3>
+                    <p>${p.description || 'Sin descripción'}</p>
+                    <div class="price">$${parseFloat(p.price).toFixed(2)}</div>
+                    <div class="category">${p.category || 'Sin categoría'}</div>
+                    <small>Creado: ${new Date(p.createdAt).toLocaleDateString('es-ES')}</small>
+                </div>
+            `).join('');
+        }
+
+        async function listarProductos() {
+            try {
+                mostrarMensaje('sidebarMsg', '⏳ Cargando...', 'info');
+                const res = await fetch(API_URL);
+                if (!res.ok) throw new Error('Error');
+                const datos = await res.json();
+                mostrarMensaje('sidebarMsg', `✓ ${datos.length} productos`, 'success');
+                mostrarResultados(datos);
+            } catch (e) {
+                mostrarMensaje('sidebarMsg', `✗ ${e.message}`, 'error');
+            }
+        }
+
+        async function obtenerProducto() {
+            const id = document.getElementById('idBuscar').value;
+            if (!id) {
+                mostrarMensaje('sidebarMsg', 'Ingresa un ID', 'error');
+                return;
+            }
+            try {
+                mostrarMensaje('sidebarMsg', '⏳ Buscando...', 'info');
+                const res = await fetch(`${API_URL}/${id}`);
+                if (res.status === 404) {
+                    mostrarMensaje('sidebarMsg', 'No encontrado', 'error');
+                    return;
+                }
+                if (!res.ok) throw new Error('Error');
+                const datos = await res.json();
+                mostrarMensaje('sidebarMsg', '✓ Encontrado', 'success');
+                mostrarResultados(datos);
+            } catch (e) {
+                mostrarMensaje('sidebarMsg', `✗ ${e.message}`, 'error');
+            }
+        }
+
+        async function crearProducto() {
+            const nombre = document.getElementById('crearNombre').value;
+            const descripcion = document.getElementById('crearDescripcion').value;
+            const precio = document.getElementById('crearPrecio').value;
+            const categoria = document.getElementById('crearCategoria').value;
+
+            if (!nombre || !precio) {
+                mostrarMensaje('crearMessage', 'Nombre y precio requeridos', 'error');
+                return;
+            }
+
+            try {
+                mostrarMensaje('crearMessage', '⏳ Creando...', 'info');
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: nombre,
+                        description: descripcion || null,
+                        price: parseFloat(precio),
+                        category: categoria || null
+                    })
+                });
+                if (!res.ok) throw new Error('Error');
+                const datos = await res.json();
+                mostrarMensaje('crearMessage', '✓ Creado', 'success');
+                mostrarResultados(datos);
+                document.getElementById('crearNombre').value = '';
+                document.getElementById('crearDescripcion').value = '';
+                document.getElementById('crearPrecio').value = '';
+                document.getElementById('crearCategoria').value = '';
+            } catch (e) {
+                mostrarMensaje('crearMessage', `✗ ${e.message}`, 'error');
+            }
+        }
+
+        async function actualizarProducto() {
+            const id = document.getElementById('actualizarId').value;
+            if (!id) {
+                mostrarMensaje('actualizarMessage', 'ID requerido', 'error');
+                return;
+            }
+
+            const datos = {};
+            if (document.getElementById('actualizarNombre').value) datos.name = document.getElementById('actualizarNombre').value;
+            if (document.getElementById('actualizarDescripcion').value) datos.description = document.getElementById('actualizarDescripcion').value;
+            if (document.getElementById('actualizarPrecio').value) datos.price = parseFloat(document.getElementById('actualizarPrecio').value);
+            if (document.getElementById('actualizarCategoria').value) datos.category = document.getElementById('actualizarCategoria').value;
+
+            if (Object.keys(datos).length === 0) {
+                mostrarMensaje('actualizarMessage', 'Ingresa al menos un campo', 'error');
+                return;
+            }
+
+            try {
+                mostrarMensaje('actualizarMessage', '⏳ Actualizando...', 'info');
+                const res = await fetch(`${API_URL}/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(datos)
+                });
+                if (res.status === 404) {
+                    mostrarMensaje('actualizarMessage', 'No encontrado', 'error');
+                    return;
+                }
+                if (!res.ok) throw new Error('Error');
+                const datosActualizados = await res.json();
+                mostrarMensaje('actualizarMessage', '✓ Actualizado', 'success');
+                mostrarResultados(datosActualizados);
+                document.getElementById('actualizarId').value = '';
+                document.getElementById('actualizarNombre').value = '';
+                document.getElementById('actualizarDescripcion').value = '';
+                document.getElementById('actualizarPrecio').value = '';
+                document.getElementById('actualizarCategoria').value = '';
+            } catch (e) {
+                mostrarMensaje('actualizarMessage', `✗ ${e.message}`, 'error');
+            }
+        }
+
+        async function eliminarProducto() {
+            const id = document.getElementById('actualizarId').value;
+            if (!id) {
+                mostrarMensaje('actualizarMessage', 'ID requerido', 'error');
+                return;
+            }
+            if (!confirm(`¿Eliminar producto ${id}?`)) return;
+
+            try {
+                mostrarMensaje('actualizarMessage', '⏳ Eliminando...', 'info');
+                const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+                if (res.status === 404) {
+                    mostrarMensaje('actualizarMessage', 'No encontrado', 'error');
+                    return;
+                }
+                if (!res.ok) throw new Error('Error');
+                mostrarMensaje('actualizarMessage', '✓ Eliminado', 'success');
+                document.getElementById('resultados').innerHTML = '<div class="empty">Sin datos</div>';
+                document.getElementById('actualizarId').value = '';
+            } catch (e) {
+                mostrarMensaje('actualizarMessage', `✗ ${e.message}`, 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            mostrarResultados(null);
+        });
+    </script>
+</body>
+</html>

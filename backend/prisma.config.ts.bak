@@ -1,0 +1,6 @@
+// Prisma 5 configuration
+// La configuración se carga desde .env.local automáticamente
+import "dotenv/config";
+
+export default {};
+
